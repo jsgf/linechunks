@@ -156,7 +156,7 @@ impl<F> LineSplitParse<F> {
 
 impl<F, T> Iterator for LineSplitParse<F>
 where
-    F: FnMut(&[u8]) -> Option<T>,
+    F: FnMut(&[u8]) -> T,
 {
     type Item = T;
 
@@ -166,15 +166,19 @@ where
                 break None;
             }
 
-            let eol = memchr::memchr(b'\n', &self.buf[self.lim..])
-                .map(|eol| self.lim + eol + 1)
-                .unwrap_or(self.buf.len());
-            let lim = mem::replace(&mut self.lim, eol);
+            debug_assert!(!self.buf.is_empty());
+
+            let (eol, new_lim) = memchr::memchr(b'\n', &self.buf[self.lim..])
+                .map(|eol| (self.lim + eol, self.lim + eol + 1))
+                .unwrap_or((self.buf.len(), self.buf.len()));
+            let lim = mem::replace(&mut self.lim, new_lim);
             let slice = &self.buf[lim..eol];
 
-            if let Some(result) = (self.parser)(slice) { 
-                break Some(result);
+            if slice.is_empty() {
+                continue;
             }
+
+            break Some((self.parser)(slice));
         }
     }
 }
