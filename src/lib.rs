@@ -240,7 +240,7 @@ mod test {
                     })
                 }
             })
-            .map(|s| s.len())
+            .map(|s| s.map(|s| s.len()).unwrap_or(0))
             .sum();
 
         assert!(lines > 0);
